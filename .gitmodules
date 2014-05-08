@@ -1,0 +1,3 @@
+[submodule "app/roomframework"]
+	path = app/roomframework
+	url = https://github.com/shunjikonishi/roomframework-play.git
