@@ -1,0 +1,42 @@
+<html>
+<head>
+<title>Chat sample</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<script src="http://shunjikonishi.github.io/roomframework/src/room.connection.js"></script>
+</head>
+<body>
+<h1>Chat2</h1>
+<div>
+Name: <input type="text" id="name" size="10"> 
+Message: <input type="text" id="message" size="40">
+</div>
+<div id="logs">
+</div>
+<script>
+$(function() {
+	var ws = new room.Connection("ws://room-sandbox.herokuapp.com/shunjikonishi/roomframeworknotest"),
+		$logs = $("#logs"),
+		$msg = $("#message"),
+		$name = $("#name");
+	ws.addEventListener("chat", function(data) {
+		var $p = $("<p/>");
+		$p.append(data.name + ": " + data.msg);
+		$logs.append($p);
+	});
+	$msg.keydown(function(event) {
+		if (event.keyCode == 13) {
+			var data = {
+				"name" : $name.val() || "NoName",
+				"msg" : $msg.val()
+			};
+			ws.request({
+				"command" : "chat",
+				"data" : data
+			});
+			$msg.val("");
+		}
+	});
+})
+</script>
+</body>
+</html>
