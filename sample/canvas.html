@@ -1,0 +1,76 @@
+<!DOCTYPE html> 
+<html> 
+<head>
+<meta charset=utf-8>
+<title>Canvasのテスト</title>
+<!--[if lt IE 9]><script src="http://static.thomasjbradley.ca/signature-pad/flashcanvas.js"></script><![endif]-->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<script src="javascripts/room.connection.js"></script>
+<script src="javascripts/drawcanvas.js"></script> 
+<style>
+#pad2 {
+	cursor: url("http://static.thomasjbradley.ca/signature-pad/pen.cur") 16 16, crosshair;
+	border: 1px solid #ccc;
+}
+.color {
+	width: 25px;
+	height: 25px;
+	margin-left: 5px;
+	float: left;
+}
+.selected {
+	border: 1px solid; #000000;
+</style>
+
+<script>
+$(document).ready(function () {
+	var host = location.search.indexOf("local=true") > 0 ? "localhost:9000" : "room-sandbox.herokuapp.com",
+		wsUrl = "ws://" + host + "/shunjikonishi/egokorogaarimasen",
+		drawCanvas = new flect.html.DrawCanvas("#pad2", wsUrl);
+	
+	$("#btnClear").click(function() {
+		drawCanvas.clear();
+	});
+	$(".color").click(function() {
+		$(".selected").removeClass("selected");
+		drawCanvas.penColor($(this).css("background-color"));
+		$(this).addClass("selected");
+	});
+	$(":radio").click(function() {
+		drawCanvas.penWidth($(this).attr("value"));
+	});
+});
+</script> 
+</head>
+<body> 
+	<h1>Draw tool with WebSocket</h1>
+	<table>
+	<tr>
+		<td style="text-align:right">Pen color:</td>
+		<td><div style="float:left">　</div>
+			<div class="color selected" style="background-color:#000000"></div> 
+			<div class="color" style="background-color:#FF0000"></div> 
+			<div class="color" style="background-color:#0000FF"></div> 
+			<div class="color" style="background-color:#00FF00"></div> 
+			<div class="color" style="background-color:#FFFF00"></div> 
+			<div class="color" style="background-color:#00FFFF"></div> 
+			<div class="color" style="background-color:#FF00FF"></div> 
+			<div style="clear:left;"></div>
+		</td>
+	</tr>
+	<tr>
+		<td style="text-align:right">Pen width:</td>
+		<td>　
+			<input type="radio" name="penWidth" value="10">Thick　　
+			<input type="radio" name="penWidth" value="5">Medium　　
+			<input type="radio" name="penWidth" value="2" checked>Thin　　
+		</td>
+	</tr>
+	</table>
+	<hr>
+	<canvas id="pad2" width="400" height="200"></canvas> 
+	<div>
+		<button id="btnClear">Clear canvas</button>
+	</div>
+</body> 
+</html>
