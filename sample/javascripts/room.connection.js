@@ -1,6 +1,15 @@
 if (typeof(room) === "undefined") room = {};
 
 $(function() {
+	var nullLogger = {
+			"log" : function() {}
+		}, 
+		defaultSettings = {
+			"maxRetry" : 5,
+			"retryInterval" : 1000,
+			"logger" : nullLogger
+		};
+
 	/**
 	 * settings
 	 * - onOpen(event)
@@ -9,10 +18,9 @@ $(function() {
 	 * - onMessage(data, startTime)
 	 * - onServerError(msg)
 	 */
-	room.Connection = function(wsUri, logger) {
-		var MAX_RETRY = 5;
+	room.Connection = function(settings) {
 		function request(params) {
-			/*
+			logger.log("request", params);
 			if (!isConnected()) {
 				if (retryCount < MAX_RETRY) {
 					ready(function() {
@@ -22,16 +30,9 @@ $(function() {
 				}
 				return;
 			}
-			*/
 			if (settings.onRequest) {
 				settings.onRequest(params.command, params.data);
 			}
-			websocketRequest(params)
-			return self;
-		}
-		//command, log, data, success
-		function websocketRequest(params) {
-			logger.log("ws", params.command);
 			var startTime = new Date().getTime(),
 				id = ++requestId;
 			times[id] = startTime;
@@ -47,6 +48,7 @@ $(function() {
 				msg.log = params.log;
 			}
 			socket.send(JSON.stringify(msg));
+			return self;
 		}
 		function addEventListener(name, func) {
 			listeners[name] = func;
@@ -57,16 +59,18 @@ $(function() {
 			return self;
 		}
 		function onOpen(event) {
+			logger.log("onOpen", event);
+			if (settings.onOpen) {
+				settings.onOpen(event);
+			}
 			retryCount = 0;
 			for (var i=0; i<readyFuncs.length; i++) {
 				readyFuncs[i]();
 			}
 			readyFuncs = [];
-			if (settings.onOpen) {
-				settings.onOpen(event);
-			}
 		}
 		function onMessage(event) {
+			logger.log("receive", event);
 			var data = JSON.parse(event.data),
 				startTime = times[data.id],
 				func = null;
@@ -95,10 +99,11 @@ $(function() {
 			}
 		}
 		function onClose(event) {
+			logger.log("close", event);
 			if (settings.onClose) {
 				settings.onClose(event);
 			}
-			if (retryCount < MAX_RETRY) {
+			if (retryCount < settings.maxRetry) {
 				retryCount++;
 				setTimeout(function() {
 					socket = createWebSocket();
@@ -126,7 +131,7 @@ $(function() {
 		}
 		function close() {
 			if (isConnected()) {
-				retryCount = MAX_RETRY;
+				retryCount = settings.maxRetry;
 				socket.close();
 			}
 		}
@@ -134,20 +139,21 @@ $(function() {
 			return socket.readyState == 1;//OPEN
 		}
 		function createWebSocket() {
-			var socket = new WebSocket(wsUri);
+			var socket = new WebSocket(settings.url);
 			socket.onopen = onOpen;
 			socket.onmessage = onMessage;
 			socket.onerror = onError;
 			socket.onclose = onClose;
 			return socket;
 		}
-		if (!logger) {
-			logger = {
-				"log" : function() {}
-			}
+		if (typeof(settings) === "string") {
+			settings = {
+				"url" : settings
+			};
 		}
+		settings = $.extend({}, defaultSettings, settings);
 		var self = this,
-			settings = {},
+			logger = settings.logger,
 			requestId = 0,
 			times = {},
 			listeners = {},

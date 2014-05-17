@@ -19,14 +19,16 @@ $(function() {
 		return ("p" + n).replace(".", "");
 	}
 	var host = location.search.indexOf("local=true") > 0 ? "localhost:9000" : "room-sandbox.herokuapp.com",
-		ws = new room.Connection("ws://" + host + "/shunjikonishi/roomframeworknotest"),
+		ws = new room.Connection({
+			"url": "ws://" + host + "/shunjikonishi/roomframeworknotest",
+			"logger": console
+		}), 
 		$logs = $("#logs"),
 		$msg = $("#message"),
 		$name = $("#name"),
 		id = generateId();
 	ws.addEventListener("chat", function(data) {
 		var $p = $("#" + data.id);
-console.log("data.id: " + $p.length + ", " + data.id);
 		if ($p.length == 0) {
 			$p = $("<p/>");
 			$p.attr("id", data.id);
