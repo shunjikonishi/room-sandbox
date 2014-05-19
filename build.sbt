@@ -2,11 +2,13 @@ name := "room-sandbox"
 
 version := "1.0-SNAPSHOT"
 
+resolvers += "Flect repo" at "http://flect.github.io/maven-repo/"
+
 libraryDependencies ++= Seq(
   jdbc,
   anorm,
   cache,
-  "net.debasishg" % "redisclient_2.10" % "2.12"
+  "roomframework" %% "roomframework" % "0.9.1"
 )     
 
 play.Project.playScalaSettings
