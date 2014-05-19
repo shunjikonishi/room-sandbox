@@ -2,7 +2,9 @@ package controllers
 
 import play.api._
 import play.api.mvc._
-import roomframework.room._
+import roomframework.room.RoomManager
+import roomframework.room.DefaultRoomFactory
+import roomframework.room.echo.EchoRoomFactory
 
 object Application extends Controller {
 
@@ -10,23 +12,12 @@ object Application extends Controller {
     NotFound(views.html.index(path))
   }
 
+  val rm = RoomManager(new DefaultRoomFactory() with EchoRoomFactory)
+
   def ws(path: String) = WebSocket.using[String] { implicit request =>
     Logger.info("WebSocket request: " + path)
     val h = rm.join(path)
     (h.in, h.out)
-  }
-
-  val rm = RoomManager(new EchoRoomFactory())
-
-  class EchoRoomFactory extends RoomFactory {
-    def createRoom(name: String) = new DefaultRoom(name)
-    override def createHandler(room: Room) = new EchoRoomHandler(room)
-  }
-
-  class EchoRoomHandler(room: Room) extends RoomHandler(room) {
-    override protected def handleMessage(msg: String): Unit = {
-      room.channel.send(msg)
-    }
   }
 
 }
