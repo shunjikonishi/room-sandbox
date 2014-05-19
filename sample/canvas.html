@@ -2,9 +2,12 @@
 <html> 
 <head>
 <meta charset=utf-8>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
 <title>Canvasのテスト</title>
 <!--[if lt IE 9]><script src="http://static.thomasjbradley.ca/signature-pad/flashcanvas.js"></script><![endif]-->
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
 <script src="javascripts/room.connection.js"></script>
 <script src="javascripts/drawcanvas.js"></script> 
 <style>
@@ -43,34 +46,45 @@ $(document).ready(function () {
 </script> 
 </head>
 <body> 
+<div class="container">
 	<h1>Draw tool with WebSocket</h1>
-	<table>
-	<tr>
-		<td style="text-align:right">Pen color:</td>
-		<td><div style="float:left">　</div>
-			<div class="color selected" style="background-color:#000000"></div> 
-			<div class="color" style="background-color:#FF0000"></div> 
-			<div class="color" style="background-color:#0000FF"></div> 
-			<div class="color" style="background-color:#00FF00"></div> 
-			<div class="color" style="background-color:#FFFF00"></div> 
-			<div class="color" style="background-color:#00FFFF"></div> 
-			<div class="color" style="background-color:#FF00FF"></div> 
-			<div style="clear:left;"></div>
-		</td>
-	</tr>
-	<tr>
-		<td style="text-align:right">Pen width:</td>
-		<td>　
-			<input type="radio" name="penWidth" value="10">Thick　　
-			<input type="radio" name="penWidth" value="5">Medium　　
-			<input type="radio" name="penWidth" value="2" checked>Thin　　
-		</td>
-	</tr>
-	</table>
-	<hr>
-	<canvas id="pad2" width="400" height="200"></canvas> 
-	<div>
-		<button id="btnClear">Clear canvas</button>
+	<div class="row">
+		<div class="xs-col-12">
+			<table>
+			<tr>
+				<td style="text-align:right">Pen color:</td>
+				<td><div style="float:left">　</div>
+					<div class="color selected" style="background-color:#000000"></div> 
+					<div class="color" style="background-color:#FF0000"></div> 
+					<div class="color" style="background-color:#0000FF"></div> 
+					<div class="color" style="background-color:#00FF00"></div> 
+					<div class="color" style="background-color:#FFFF00"></div> 
+					<div class="color" style="background-color:#00FFFF"></div> 
+					<div class="color" style="background-color:#FF00FF"></div> 
+					<div style="clear:left;"></div>
+				</td>
+			</tr>
+			<tr>
+				<td style="text-align:right">Pen width:</td>
+				<td>　
+					<input type="radio" name="penWidth" value="10">Thick　　
+					<input type="radio" name="penWidth" value="5">Medium　　
+					<input type="radio" name="penWidth" value="2" checked>Thin　　
+				</td>
+			</tr>
+			</table>
+		</div>
 	</div>
+	<div class="row">
+		<div class="xs-col-12">
+			<canvas id="pad2" height="200"></canvas> 
+		</div>
+	</div>
+	<div class="row">
+		<div class="xs-col-12">
+			<button id="btnClear" class="btn">Clear canvas</button>
+		</div>
+	</div>
+</div>
 </body> 
 </html>

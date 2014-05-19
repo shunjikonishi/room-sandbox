@@ -31,6 +31,9 @@ $(function() {
 	ws.onmessage = function(event) {
 		$("<p/>").append(event.data).prependTo($logs);
 	}
+	ws.onopen = function(event) {
+		ws.send("");
+	}
 	$msg.keydown(function(event) {
 		if (event.keyCode == 13) {
 			var msg = ($name.val() || "NoName") + ": " + $msg.val();
