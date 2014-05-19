@@ -8,7 +8,7 @@ libraryDependencies ++= Seq(
   jdbc,
   anorm,
   cache,
-  "roomframework" %% "roomframework" % "0.9.1"
+  "roomframework" %% "roomframework" % "0.9.2"
 )     
 
 play.Project.playScalaSettings
