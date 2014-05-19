@@ -43,7 +43,7 @@ $(function() {
 		if ($p.length == 0) {
 			$p = $("<p/>");
 			$p.attr("id", data.id);
-			$logs.append($p);
+			$logs.prepend($p);
 		}
 		$p.text(data.name + ": " + data.msg);
 	});

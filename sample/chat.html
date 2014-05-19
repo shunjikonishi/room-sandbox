@@ -1,26 +1,35 @@
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chat sample</title>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
 </head>
 <body>
-<h1>Chat</h1>
-<div>
-Name: <input type="text" id="name" size="10"> 
-Message: <input type="text" id="message" size="40">
-</div>
-<div id="logs">
+<div class="container">
+	<h1>Chat</h1>
+	<div class="row">
+		<div class="col-xs-4">
+			Name: <input type="text" id="name" class="form-control"> 
+		</div>
+		<div class="col-xs-8">
+			Message: <input type="text" id="message" class="form-control">
+		</div>
+	</div>
+	<div class="row" style="margin-top:20px;">
+		<div id="logs" class="col-xs-12">
+		</div>
+	</div>
 </div>
 <script>
 $(function() {
-	var ws = new WebSocket("ws://room-sandbox.herokuapp.com/shunjikonishi/tomodachigaimasen"),
+	var ws = new WebSocket("ws://room-sandbox.herokuapp.com/tanjunnachat"),
 		$logs = $("#logs"),
 		$msg = $("#message"),
 		$name = $("#name");
 	ws.onmessage = function(event) {
-		var $p = $("<p/>");
-		$p.append(event.data);
-		$logs.append($p);
+		$("<p/>").append(event.data).prependTo($logs);
 	}
 	$msg.keydown(function(event) {
 		if (event.keyCode == 13) {
