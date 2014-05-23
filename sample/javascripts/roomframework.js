@@ -6,6 +6,7 @@ $(function() {
 		}, 
 		defaultSettings = {
 			"maxRetry" : 5,
+			"authCommand" : "room.auth",
 			"retryInterval" : 1000,
 			"logger" : nullLogger
 		};
@@ -46,6 +47,9 @@ $(function() {
 			if (params.success) {
 				listeners[id] = params.success;
 			}
+			if (params.error) {
+				errors[id] = params.success;
+			}
 			var msg = {
 				"id" : id,
 				"command" : params.command,
@@ -57,13 +61,18 @@ $(function() {
 			socket.send(JSON.stringify(msg));
 			return self;
 		}
-		function addEventListener(name, func) {
-			listeners[name] = func;
+		function on(name, sl, el) {
+			if (sl) {
+				listeners[name] = sl;
+			}
+			if (el) {
+				errors[name] = el;
+			}
 			return self;
 		}
-		function removeEventListener(name) {
+		function off(name) {
 			delete listeners[name];
-			return self;
+			delete listeners[name];
 		}
 		function onOpen(event) {
 			openning = false;
@@ -74,7 +83,7 @@ $(function() {
 			retryCount = 0;
 			if (settings.authToken) {
 				request({
-					"command" : "room.auth",
+					"command" : settings.authCommand,
 					"data" : settings.authToken,
 					"success" : function(data) {
 						if (data.status == "OK" && data.token) {
@@ -100,20 +109,27 @@ $(function() {
 				settings.onMessage(data, startTime);
 			}
 			if (data.type == "error") {
-				if (settings.onServerError) {
-					settings.onServerError(data.data);
+				if (data.id && errors[data.id]) {
+					func = errors[data.id];
+				} else if (data.command && errors[data.command]) {
+					func = errors[data.command];
+				} else if (settings.onServerError) {
+					func = settings.onServerError;
 				}
-				return;
+			} else {
+				if (data.id && listeners[data.id]) {
+					func = listeners[data.id];
+				} else if (data.command && listeners[data.command]) {
+					func = listeners[data.command];
+				}
 			}
-			if (data.id && listeners[data.id]) {
-				func = listeners[data.id];
+			if (data.id) {
 				delete listeners[data.id];
-			} else if (data.command && listeners[data.command]) {
-				func = listeners[data.command];
+				delete errors[data.id];
 			}
 			if (func) {
 				func(data.data);
-			} else {
+			} else if (data.type != "error") {
 				logger.log("UnknownMessage", event.data);
 			}
 		}
@@ -177,6 +193,7 @@ $(function() {
 			requestId = 0,
 			times = {},
 			listeners = {},
+			errors = {},
 			readyFuncs = [],
 			openning = false,
 			retryCount = 0;
@@ -185,8 +202,12 @@ $(function() {
 
 		$.extend(this, {
 			"request" : request,
-			"addEventListener" : addEventListener,
-			"removeEventListener" : removeEventListener,
+			/** deprecated use on method.*/
+			"addEventListener" : on,
+			/** deprecated use off method.*/
+			"removeEventListener" : off,
+			"on" : on,
+			"off" : off,
 			"polling" : polling,
 			"ready" : ready,
 			"close" : close,
