@@ -67,7 +67,7 @@ $(function() {
 		}
 		function onOpen(event) {
 			openning = false;
-			logger.log("onOpen", event);
+			logger.log("onOpen", settings.url);
 			if (settings.onOpen) {
 				settings.onOpen(event);
 			}
@@ -118,7 +118,7 @@ $(function() {
 			}
 		}
 		function onClose(event) {
-			logger.log("close", event);
+			logger.log("close", settings.url);
 			if (settings.onClose) {
 				settings.onClose(event);
 			}
