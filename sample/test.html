@@ -1,0 +1,30 @@
+<html>
+<head>
+<title>Chat sample</title>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<script src="javascripts/room.connection.js"></script>
+</head>
+<body>
+<h1>Timer Test</h1>
+<div>
+	<div>Cnt: <span id="cnt"></span></div>
+	<div>Time: <span id="time"></span></div>
+</div>
+<script>
+$(function() {
+	var cnt = 0, 
+		start = new Date().getTime(),
+		$cnt = $("#cnt"),
+		$time = $("#time");
+	function increment() {
+		cnt++;
+		var time = Math.abs((new Date().getTime() - start) / 100);
+		$cnt.text(cnt);
+		$time.text(time);
+		setTimeout(increment, 100);
+	}
+	setTimeout(increment, 100);
+})
+</script>
+</body>
+</html>
