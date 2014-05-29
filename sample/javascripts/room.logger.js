@@ -4,6 +4,7 @@ if (typeof(room.logger) === "undefined") room.logger = {};
 $(function() {
 	function normalizeFunc(obj) {
 		var type;
+console.log("normalize: " + obj + ", " + $.isArray(obj));
 		if ($.isArray(obj)) {
 			var newArray = [];
 			for (var i=0; i<obj.length; i++) {
@@ -32,6 +33,19 @@ $(function() {
 			return newObj;
 		}
 	}
+	room.logger.DivLogger = function($div) {
+		this.log = function() {
+			var msgs = [];
+			for (var i=0; i<arguments.length; i++) {
+				if (typeof(arguments[i]) == "object") {
+					msgs.push(normalizeFunc(arguments[i]));
+				} else {
+					msgs.push(arguments[i]);
+				}
+			}
+			$("<p/>").text(JSON.stringify(msgs)).prependTo($div);
+		};
+	};
 	room.logger.WsLogger = function(wsUrl, commandName) {
 		var ws = new room.Connection(wsUrl);
 		commandName = commandName || "log";
