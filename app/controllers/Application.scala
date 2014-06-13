@@ -21,7 +21,7 @@ object Application extends Controller {
     val origin = request.headers("origin")
     Logger.info("Start connection: " + origin + path)
     Logger.info("Remote address: " + request.remoteAddress)
-    Logger.info("Headers: " + request.headers)
+    printHeaders(request)
     val h = rm.join(path)
     h match {
       case x: SandboxRoomHandler => 
@@ -42,5 +42,15 @@ object Application extends Controller {
     override protected def onDisconnect: Unit = {
       Logger.info("End conntion: " + origin.get + path.get)
     }
+  }
+  
+  private def printHeaders(request: RequestHeader) = {
+    val buf = new StringBuilder().append("Headers =>\n")
+    request.headers.toMap.foreach { case (key, seq) =>
+      seq.foreach( value =>
+        buf.append(key).append(": ").append(value).append("\r\n")
+      )
+    }
+    Logger.info(buf.toString)
   }
 }
