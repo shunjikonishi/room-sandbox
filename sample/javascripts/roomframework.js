@@ -1,15 +1,47 @@
 if (typeof(room) === "undefined") room = {};
+if (typeof(room.utils) === "undefined") room.utils = {};
 
 $(function() {
-	var nullLogger = {
-			"log" : function() {}
-		}, 
-		defaultSettings = {
-			"maxRetry" : 5,
-			"authCommand" : "room.auth",
-			"retryInterval" : 1000,
-			"logger" : nullLogger
-		};
+	"use strict";
+	var visibilityPrefix = (function() {
+		var key = "hidden",
+			prefix = ["webkit", "moz", "ms"];
+		if (key in document) {
+			return "";
+		}
+		key = "Hidden";
+		for (var i=0; i<prefix.length; i++) {
+			if (prefix + key in document) {
+				return prefix;
+			}
+		}
+		return "";
+	})(),
+	visibilityProp = visibilityPrefix ? visibilityPrefix + "Hidden" : "hidden",
+	visibilityChangeProp = visibilityPrefix + "visibilitychange",
+	nullLogger = {
+		"log" : function() {}
+	}, 
+	defaultSettings = {
+		"maxRetry" : 5,
+		"authCommand" : "room.auth",
+		"authError" : null,
+		"retryInterval" : 1000,
+		"noopCommand" : "noop",
+		"logger" : nullLogger
+	};
+	if (isIOS()) {
+		visibilityChangeProp = "pageshow";
+	}
+	function isDocumentVisible() {
+		return !document[visibilityProp];
+	}
+	function isMobile() {
+		return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+	}
+	function isIOS() {
+		return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+	}
 
 	/**
 	 * settings
@@ -20,15 +52,16 @@ $(function() {
 	 * - authToken
 	 * - onOpen(event)
 	 * - onClose(event)
+	 * - onMessage(event)
+	 * - onSocketError(event)
 	 * - onRequest(command, data)
-	 * - onMessage(data, startTime)
-	 * - onServerError(msg)
+	 * - onServerError(data)
 	 */
 	room.Connection = function(settings) {
 		function request(params) {
 			logger.log("request", params);
 			if (!isConnected()) {
-				if (retryCount < settings.maxRetry) {
+				if (openning || retryCount < settings.maxRetry) {
 					ready(function() {
 						request(params);
 					});
@@ -48,7 +81,7 @@ $(function() {
 				listeners[id] = params.success;
 			}
 			if (params.error) {
-				errors[id] = params.success;
+				errors[id] = params.error;
 			}
 			var msg = {
 				"id" : id,
@@ -72,9 +105,17 @@ $(function() {
 		}
 		function off(name) {
 			delete listeners[name];
-			delete listeners[name];
+			delete errors[name];
+			return self;
 		}
 		function onOpen(event) {
+			function authError(data) {
+				logger.log("authError", settings.url);
+				retryCount = settings.maxRetry;
+				if (settings.authError) {
+					settings.authError(data);
+				}
+			}
 			openning = false;
 			logger.log("onOpen", settings.url);
 			if (settings.onOpen) {
@@ -86,10 +127,9 @@ $(function() {
 					"command" : settings.authCommand,
 					"data" : settings.authToken,
 					"success" : function(data) {
-						if (data.status == "OK" && data.token) {
-							settings.authToken = data.token;
-						}
-					}
+						settings.authToken = data;
+					},
+					"error" : authError
 				});
 			}
 			for (var i=0; i<readyFuncs.length; i++) {
@@ -99,14 +139,14 @@ $(function() {
 		}
 		function onMessage(event) {
 			logger.log("receive", event.data);
+			if (settings.onMessage) {
+				settings.onMessage(event);
+			}
 			var data = JSON.parse(event.data),
 				startTime = times[data.id],
 				func = null;
 			if (startTime) {
 				delete times[data.id];
-			}
-			if (settings.onMessage) {
-				settings.onMessage(data, startTime);
 			}
 			if (data.type == "error") {
 				if (data.id && errors[data.id]) {
@@ -134,15 +174,23 @@ $(function() {
 			}
 		}
 		function onClose(event) {
+			function isRetry() {
+				if (isMobile() && !isDocumentVisible()) {
+					return false;
+				}
+				return retryCount < settings.maxRetry;
+			}
 			logger.log("close", settings.url);
 			if (settings.onClose) {
 				settings.onClose(event);
 			}
-			if (retryCount < settings.maxRetry) {
-				retryCount++;
+			if (isRetry()) {
 				setTimeout(function() {
-					socket = createWebSocket();
-				}, retryCount * 1000);
+					if (!isConnected()) {
+						socket = createWebSocket();
+					}
+				}, retryCount * settings.retryInterval);
+				retryCount++;
 			}
 		}
 		function onError(event) {
@@ -182,6 +230,15 @@ $(function() {
 			socket.onclose = onClose;
 			return socket;
 		}
+		function sendNoop(interval, sendIfHidden, commandName) {
+			return setInterval(function() {
+				if (isConnected() && (sendIfHidden || isDocumentVisible())) {
+					request({
+						"command" : commandName || "noop"
+					});
+				}
+			}, interval * 1000);
+		}
 		if (typeof(settings) === "string") {
 			settings = {
 				"url" : settings
@@ -196,10 +253,19 @@ $(function() {
 			errors = {},
 			readyFuncs = [],
 			openning = false,
-			retryCount = 0;
+			retryCount = 0,
 			socket = createWebSocket();
-
-
+		$(window).on("beforeunload", close);
+		$(document).on(visibilityChangeProp, function() {
+			var bVisible = isDocumentVisible();
+			logger.log(visibilityChangeProp, "visible=" + bVisible);
+			if (bVisible && !isConnected()) {
+				socket = createWebSocket();
+			}
+		});
+		if (settings.noopCommand) {
+			on(settings.noopCommand, function() {});
+		}
 		$.extend(this, {
 			"request" : request,
 			/** deprecated use on method.*/
@@ -212,6 +278,7 @@ $(function() {
 			"ready" : ready,
 			"close" : close,
 			"isConnected" : isConnected,
+			"sendNoop" : sendNoop,
 			"onOpen" : function(func) { settings.onOpen = func; return this;},
 			"onClose" : function(func) { settings.onClose = func; return this;},
 			"onRequest" : function(func) { settings.onRequest = func; return this;},
@@ -220,6 +287,11 @@ $(function() {
 			"onServerError" : function(func) { settings.onServerError = func; return this;}
 		});
 	};
+	$.extend(room.utils, {
+		"isIOS" : isIOS,
+		"isMobile" : isMobile,
+		"isDocumentVisible" : isDocumentVisible
+	});
 });
 if (typeof(room) === "undefined") room = {};
 
@@ -322,19 +394,21 @@ $(function() {
 });
 if (typeof(room) === "undefined") room = {};
 if (typeof(room.logger) === "undefined") room.logger = {};
+if (typeof(room.utils) === "undefined") room.utils = {};
 
 $(function() {
-	function normalizeFunc(obj) {
-		var type;
-console.log("normalize: " + obj + ", " + $.isArray(obj));
-		if ($.isArray(obj)) {
+	function stripFunc(obj) {
+		var type = typeof(obj);
+		if (type !== "object") {
+			return obj;
+		} else if ($.isArray(obj)) {
 			var newArray = [];
 			for (var i=0; i<obj.length; i++) {
 				type = typeof(obj[i]);
 				if (type === "function") {
 					newArray.push("(function)");
 				} else if (type === "object") {
-					newArray.push(normalizeFunc(obj[i]));
+					newArray.push(stripFunc(obj[i]));
 				} else {
 					newArray.push(obj[i]);
 				}
@@ -347,7 +421,7 @@ console.log("normalize: " + obj + ", " + $.isArray(obj));
 				if (type === "function") {
 					newObj[key] = "(function)";
 				} else if (type === "object") {
-					newObj[key] = normalizeFunc(obj[key]);
+					newObj[key] = stripFunc(obj[key]);
 				} else {
 					newObj[key] = obj[key];
 				}
@@ -355,12 +429,22 @@ console.log("normalize: " + obj + ", " + $.isArray(obj));
 			return newObj;
 		}
 	}
+	room.logger.WsLogger = function(wsUrl, commandName) {
+		var ws = new room.Connection(wsUrl);
+		commandName = commandName || "log";
+		this.log = function() {
+			ws.request({
+				"command": commandName,
+				"data": stripFunc(arguments)
+			});
+		};
+	};
 	room.logger.DivLogger = function($div) {
 		this.log = function() {
 			var msgs = [];
 			for (var i=0; i<arguments.length; i++) {
 				if (typeof(arguments[i]) == "object") {
-					msgs.push(normalizeFunc(arguments[i]));
+					msgs.push(stripFunc(arguments[i]));
 				} else {
 					msgs.push(arguments[i]);
 				}
@@ -368,17 +452,10 @@ console.log("normalize: " + obj + ", " + $.isArray(obj));
 			$("<p/>").text(JSON.stringify(msgs)).prependTo($div);
 		};
 	};
-	room.logger.WsLogger = function(wsUrl, commandName) {
-		var ws = new room.Connection(wsUrl);
-		commandName = commandName || "log";
-		this.log = function() {
-			ws.request({
-				"command": commandName,
-				"data": normalizeFunc(arguments)
-			});
-		};
-	};
 	room.logger.nullLogger = {
 		"log" : function() {}
 	};
+	$.extend(room.utils, {
+		"stripFunc" : stripFunc
+	});
 });
